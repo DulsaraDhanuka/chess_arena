@@ -33,13 +33,19 @@ pgn_files = [f for f in os.listdir(args.input) if os.path.isfile(os.path.join(ar
 enc = Encoding()
 tokens = []
 for pgn_name in pgn_files:
-    with open(os.path.join(args.input, pgn_name)) as pgn:
-        while game := chess.pgn.read_game(pgn):
-            tokens.append(enc.encode("<s>"))
-            for move in game.mainline_moves():
-                tokens.append(enc.encode(move.uci()))
-            tokens.append(enc.encode("</s>"))
+    with open(os.path.join(args.input, pgn_name), 'r', encoding='utf-8') as pgn:
+        while True:
+            try:
+                game = chess.pgn.read_game(pgn)
+                if game is None: break
+                tokens.append(enc.encode("<s>"))
+                for move in game.mainline_moves():
+                    tokens.append(enc.encode(move.uci()))
+                tokens.append(enc.encode("</s>"))
+            except Exception as e:
+                continue
 n_vocab = enc.n_vocab
+print(f"Training data loaded - {len(tokens)} tokens")
 
 block_size = args.block_size
 batch_size = args.batch_size
