@@ -8,3 +8,9 @@ class RandomAgent():
     def next_move(self, board: chess.Board, last_move: str, next_legal_moves: chess.LegalMoveGenerator):
         legal_moves = [move.uci() for move in next_legal_moves]
         return random.choice(legal_moves)
+
+    def reset(self):
+        pass
+
+    def terminate(self):
+        pass

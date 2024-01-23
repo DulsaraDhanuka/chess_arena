@@ -9,3 +9,9 @@ class HumanAgent():
         print()
         print([move.uci() for move in next_legal_moves])
         return input(f"{self.name} > ")
+
+    def reset(self):
+        pass
+
+    def terminate(self):
+        pass

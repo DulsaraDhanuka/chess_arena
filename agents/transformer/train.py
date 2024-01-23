@@ -115,7 +115,7 @@ torch.save(model.state_dict(), os.path.join(args.output, f"model-{model_id}-{ste
 print(f"step: {step}, training loss: {losses['train']}, validation loss: {losses['val']}")
 
 with open(os.path.join(args.output, f"model-{model_id}.config"), 'w') as f:
-    f.write(json.dumps(args))
+    f.write(json.dumps(vars(args)))
 
 plt.plot(training_epoch_loss, label='train_loss')
 plt.plot(validation_epoch_loss,label='val_loss')
