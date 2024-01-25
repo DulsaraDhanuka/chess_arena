@@ -32,9 +32,9 @@ def run_game():
 
 board = chess.Board()
 
-#agent1 = RandomAgent("Dummy")
+agent1 = RandomAgent("Dummy")
 #agent1 = StockfishAgent("Stockfish")
-agent1 = HumanAgent("Human")
+#agent1 = HumanAgent("Human")
 agent2 = TransformerAgent("Transformer")
 players = [agent1, agent2]
 

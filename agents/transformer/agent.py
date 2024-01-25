@@ -10,7 +10,7 @@ class TransformerAgent():
         self.context = [self.enc.encode('<s>')]
 
         n_vocab = self.enc.n_vocab
-        block_size = 256
+        block_size = 512
         n_embd = 384
         n_heads = 6
         n_blocks = 6
@@ -19,7 +19,7 @@ class TransformerAgent():
 
         self.model = Transformer(block_size, n_vocab, n_embd, n_heads, n_blocks, dropout, self.device)
         self.model.to(self.device)
-        self.model.load_state_dict(torch.load("agents/transformer/models/2/model-1705993302.7913043-11700.pth", map_location=torch.device('cpu')))
+        self.model.load_state_dict(torch.load("agents/transformer/models/4/model-1706148505.1289093-21900.pth", map_location=torch.device('cpu')))
         self.model.eval()
 
     def next_move(self, board: chess.Board, last_move: str, next_legal_moves: chess.LegalMoveGenerator):
@@ -33,6 +33,7 @@ class TransformerAgent():
                     return move
             except Exception as e:
                 print(f"Context: {self.context}")
+                print(f"Context length: {len(self.context)}")
                 print(f"Invalid move: {move}")
         return None
 
