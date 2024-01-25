@@ -1,0 +1,4 @@
+chess==1.10.0
+torch==2.1.2
+wandb==0.16.2
+stockfish==3.28.0
