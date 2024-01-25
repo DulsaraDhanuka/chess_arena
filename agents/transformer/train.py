@@ -3,12 +3,12 @@ import os
 import time
 import torch
 import chess
+import wandb
 import chess.pgn
 import argparse
 import torch.nn as nn
 from model import Transformer
 from torch.nn import functional as F
-from matplotlib import pyplot as plt
 from data_utils import Encoding
 
 parser = argparse.ArgumentParser(
@@ -59,6 +59,23 @@ eval_interval = args.eval_interval
 dropout = args.dropout
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
+wandb.init(
+    project="chess_transformer",
+    config={
+        "block_size": block_size,
+        "batch_size": batch_size,
+        "embedding_size": n_embd,
+        "num_heads": n_heads,
+        "num_blocks": n_blocks,
+        "eval_iters": eval_iters,
+        "learning_rate": learning_rate,
+        "max_iters": max_iters,
+        "eval_interval": eval_interval,
+        "dropout": dropout,
+    }
+)
+
+
 data = torch.tensor(tokens, dtype=torch.long)
 n = int(0.9*data.shape[0])
 train_data = data[:n]
@@ -101,6 +118,7 @@ for step in range(max_iters):
             validation_epoch_loss.append(losses['val'])
             torch.save(model.state_dict(), os.path.join(args.output, f"model-{model_id}-{step}.pth"))
             print(f"step: {step}, training loss: {losses['train']}, validation loss: {losses['val']}")
+            wandb.log({"training_loss": losses['train'], "validation_loss": losses['val']})
         logits, loss = model(*get_batch("train"))
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
@@ -113,11 +131,6 @@ training_epoch_loss.append(losses['train'])
 validation_epoch_loss.append(losses['val'])
 torch.save(model.state_dict(), os.path.join(args.output, f"model-{model_id}-{step}.pth"))
 print(f"step: {step}, training loss: {losses['train']}, validation loss: {losses['val']}")
+wandb.log({"training_loss": losses['train'], "validation_loss": losses['val']})
 
-with open(os.path.join(args.output, f"model-{model_id}.config"), 'w') as f:
-    f.write(json.dumps(vars(args)))
-
-plt.plot(training_epoch_loss, label='train_loss')
-plt.plot(validation_epoch_loss,label='val_loss')
-plt.legend()
-plt.show()
+wandb.finish()
