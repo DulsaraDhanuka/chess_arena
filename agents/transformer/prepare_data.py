@@ -5,7 +5,7 @@ from data_utils import Encoding
 import numpy as np
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
-data_path = os.path.join(dir_path, "data")
+data_path = os.path.join(dir_path, "data_pgn")
 
 pgn_files = [f for f in os.listdir(data_path) if os.path.isfile(os.path.join(data_path, f)) and os.path.splitext(f)[1] == ".pgn"]
 enc = Encoding()
