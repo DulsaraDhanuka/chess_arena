@@ -59,6 +59,7 @@ with open(args.input, 'rb') as f:
     tokens = np.load(f)
 
 data = torch.from_numpy(tokens)
+data = data.type(torch.LongTensor)
 n = int(0.8*data.shape[0])
 train_data = data[:n]
 val_data = data[n:]
