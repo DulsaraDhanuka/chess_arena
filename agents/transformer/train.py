@@ -9,12 +9,13 @@ import torch.nn as nn
 from model import Transformer
 from torch.nn import functional as F
 from data_utils import Encoding
+import numpy as np
 
 parser = argparse.ArgumentParser(
                     prog='Infinite Shakespeare Trainer',
                     description='Train the transformer on a dataset')
 
-parser.add_argument('-i', '--input', help='Input pgn directory', default='data')
+parser.add_argument('-i', '--input', help='Input data .npy', default='data.npy', required=True)
 parser.add_argument('-o', '--output', help='Output directory', required=True)
 parser.add_argument('--block_size', help='Block (context) size', type=int, required=True)
 parser.add_argument('--batch_size', help='Batch size', type=int, required=True)
@@ -27,8 +28,6 @@ parser.add_argument('--learning_rate', help='Learning rate', type=float, require
 parser.add_argument('--max_iters', help='Max Iterations', type=int, required=True)
 parser.add_argument('--dropout', help='Dropout rate', type=float, required=True)
 args = parser.parse_args()
-
-
 
 block_size = args.block_size
 batch_size = args.batch_size
@@ -58,9 +57,11 @@ wandb.init(
     }
 )
 
+with open(args.input, 'rb') as f:
+    tokens = np.load(f)
 
-data = torch.tensor(tokens, dtype=torch.long)
-n = int(0.9*data.shape[0])
+data = torch.from_numpy(tokens)
+n = int(0.8*data.shape[0])
 train_data = data[:n]
 val_data = data[n:]
 

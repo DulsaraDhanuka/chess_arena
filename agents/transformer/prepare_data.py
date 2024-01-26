@@ -25,4 +25,5 @@ for pgn_name in pgn_files:
 n_vocab = enc.n_vocab
 print(f"Training data loaded - {len(tokens)} tokens")
 
-
+with open("data.npy", "wb") as f:
+    np.save(f, np.array(tokens, dtype=np.int32))
