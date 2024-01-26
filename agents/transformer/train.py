@@ -28,23 +28,7 @@ parser.add_argument('--max_iters', help='Max Iterations', type=int, required=Tru
 parser.add_argument('--dropout', help='Dropout rate', type=float, required=True)
 args = parser.parse_args()
 
-pgn_files = [f for f in os.listdir(args.input) if os.path.isfile(os.path.join(args.input, f)) and os.path.splitext(f)[1] == ".pgn"]
-enc = Encoding()
-tokens = []
-for pgn_name in pgn_files:
-    with open(os.path.join(args.input, pgn_name), 'r', encoding='utf-8') as pgn:
-        while True:
-            try:
-                game = chess.pgn.read_game(pgn)
-                if game is None: break
-                tokens.append(enc.encode("<s>"))
-                for move in game.mainline_moves():
-                    tokens.append(enc.encode(move.uci()))
-                tokens.append(enc.encode("</s>"))
-            except Exception as e:
-                continue
-n_vocab = enc.n_vocab
-print(f"Training data loaded - {len(tokens)} tokens")
+
 
 block_size = args.block_size
 batch_size = args.batch_size
@@ -103,6 +87,7 @@ def estimate_loss():
     return out
 
 model = Transformer(block_size, n_vocab, n_embd, n_heads, n_blocks, dropout, device)
+model.train()
 model.to(device)
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
@@ -129,7 +114,7 @@ losses = estimate_loss()
 training_epoch_loss.append(losses['train'])
 validation_epoch_loss.append(losses['val'])
 torch.save(model.state_dict(), os.path.join(args.output, f"model-{model_id}-{step}.pth"))
-print(f"step: {step}, training loss: {losses['train']}, validation loss: {losses['val']}")
+print(f"step: {step}, training loss: {losses['train']}, validation loss: {losses['val']}, lr: {optimizer.param_groups[0]['lr']}")
 wandb.log({"training_loss": losses['train'], "validation_loss": losses['val']})
 
 wandb.finish()
