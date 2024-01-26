@@ -1,9 +1,7 @@
 import os
 import time
 import torch
-import chess
 import wandb
-import chess.pgn
 import argparse
 import torch.nn as nn
 from model import Transformer
