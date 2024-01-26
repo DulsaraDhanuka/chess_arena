@@ -13,7 +13,7 @@ parser = argparse.ArgumentParser(
                     prog='Infinite Shakespeare Trainer',
                     description='Train the transformer on a dataset')
 
-parser.add_argument('-i', '--input', help='Input data .npy', default='data.npy', required=True)
+parser.add_argument('-i', '--input', help='Input data .npy', default='data.npy')
 parser.add_argument('-o', '--output', help='Output directory', required=True)
 parser.add_argument('--block_size', help='Block (context) size', type=int, required=True)
 parser.add_argument('--batch_size', help='Batch size', type=int, required=True)
@@ -85,7 +85,7 @@ def estimate_loss():
     model.train()
     return out
 
-model = Transformer(block_size, n_vocab, n_embd, n_heads, n_blocks, dropout, device)
+model = Transformer(block_size, Encoding().n_vocab, n_embd, n_heads, n_blocks, dropout, device)
 model.train()
 model.to(device)
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
