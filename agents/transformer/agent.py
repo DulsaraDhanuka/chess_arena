@@ -7,7 +7,6 @@ class TransformerAgent():
     def __init__(self, name):
         self.name = name
         self.enc = Encoding()
-        self.context = [self.enc.encode('<s>')]
 
         n_vocab = self.enc.n_vocab
         block_size = 512
@@ -32,13 +31,13 @@ class TransformerAgent():
                     self.context.append(move_idx)
                     return move
             except Exception as e:
-                print(f"Context: {self.context}")
+                #print(f"Context: {self.context}")
                 print(f"Context length: {len(self.context)}")
                 print(f"Invalid move: {move}")
         return None
 
     def reset(self):
-        pass
+        self.context = [self.enc.encode('<s>')]
 
     def terminate(self):
         pass

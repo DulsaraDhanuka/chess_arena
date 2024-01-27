@@ -37,7 +37,13 @@ learning_rate = args.learning_rate
 max_iters = args.max_iters
 eval_interval = args.eval_interval
 dropout = args.dropout
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+try:
+    import torch_xla
+    import torch_xla.core.xla_model as xm
+
+    device = xm.xla_device()
+except Exception as e:
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 wandb.init(
     project="chess_transformer",

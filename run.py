@@ -3,8 +3,8 @@ import chess
 import chess.svg
 from agents.human.agent import HumanAgent
 from agents.random.agent import RandomAgent
-from agents.stockfish.agent import StockfishAgent
 from agents.transformer.agent import TransformerAgent
+from agents.minimax.agent import MinimaxAgent
 
 def run_game():
     current_player = random.randint(0, 1)
@@ -30,17 +30,19 @@ def run_game():
     else:
         print(f"{players[int(not white_player)].name} Wins!")
 
-board = chess.Board()
-
-agent1 = RandomAgent("Dummy")
+#agent1 = RandomAgent("Dummy")
 #agent1 = StockfishAgent("Stockfish")
 #agent1 = HumanAgent("Human")
 agent2 = TransformerAgent("Transformer")
+agent1 = MinimaxAgent("Minimax")
 players = [agent1, agent2]
 
 wins = {}
 total_matches = 0
+n_moves_matches = []
 for _ in range(1):
+    board = chess.Board()
+    n_moves = 0
     for player in players:
         player.reset()
     current_player = random.choice(players)
@@ -54,6 +56,7 @@ for _ in range(1):
             board.push_uci(move)
             current_player = white_player if current_player == black_player else black_player
             last_move = move
+            n_moves += 1
         except chess.IllegalMoveError as e:
             print("Illegal move")
             continue
@@ -69,11 +72,13 @@ for _ in range(1):
         print(f"{black_player.name} Wins!")
         wins[black_player.name] = wins.get(black_player.name, 0) + 1
     total_matches += 1
+    n_moves_matches.append(n_moves)
 
 print("\n")
 print(f"Total matches: {total_matches}")
 for name, total in wins.items():
     print(f"{name}: {total}")
+print(f"Avg no moves: {sum(n_moves_matches)/len(n_moves_matches)}")
 
 for player in players:
     player.terminate()
