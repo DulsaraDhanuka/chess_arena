@@ -45,6 +45,8 @@ try:
 except Exception as e:
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
+print(f"Running on {device}")
+
 wandb.init(
     project="chess_transformer",
     config={
