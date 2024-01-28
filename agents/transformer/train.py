@@ -26,6 +26,7 @@ parser.add_argument('--learning_rate', help='Learning rate', type=float, )
 parser.add_argument('--max_iters', help='Max Iterations', type=int, required=True)
 parser.add_argument('--dropout', help='Dropout rate', type=float, )
 parser.add_argument('--checkpoint', help='Saved checkpoint of a previous model iteration', type=str, default=None)
+parser.add_argument('--keep_saves', help='Number of checkpoints to keep all previous checkpoints will be delete. All checkpoints be kept if no argument is provided', type=int, default=None)
 args = parser.parse_args()
 
 try:
@@ -133,6 +134,11 @@ def save_checkpoint(save_path, step, model, optimizer, run_id):
     }, save_path)
     wandb.save(os.path.join(args.output, f"model-{run_id}-{step}.pth"))
 
+def clear_past(keep_saves, saved_checkpoints):
+    if keep_saves is None: return
+    while len(saved_checkpoints) >= keep_saves:
+        os.remove(saved_checkpoints.pop(0))
+
 model = Transformer(block_size, Encoding().n_vocab, n_embd, n_heads, n_blocks, dropout, device)
 model.train()
 model.to(device)
@@ -144,13 +150,16 @@ if "checkpoint" in args and args.checkpoint is not None:
 
 training_epoch_loss = []
 validation_epoch_loss = []
+saved_checkpoints = []
 for step in range(start_iter, max_iters):
     try:
         if step % eval_interval == 0:
             losses = estimate_loss()
             training_epoch_loss.append(losses['train'])
             validation_epoch_loss.append(losses['val'])
+            clear_past(args.keep_saves, saved_checkpoints)
             save_checkpoint(os.path.join(args.output, f"model-{run_id}-{step}.pth"), step, model, optimizer, run_id)
+            saved_checkpoints.append(os.path.join(args.output, f"model-{run_id}-{step}.pth"))
             print(f"step: {step}, training loss: {losses['train']}, validation loss: {losses['val']}")
             wandb.log({"training_loss": losses['train'], "validation_loss": losses['val']})
         logits, loss = model(*get_batch("train"))
@@ -163,7 +172,9 @@ for step in range(start_iter, max_iters):
 losses = estimate_loss()
 training_epoch_loss.append(losses['train'])
 validation_epoch_loss.append(losses['val'])
+clear_past(args.keep_saves, saved_checkpoints)
 save_checkpoint(os.path.join(args.output, f"model-{run_id}-{step}.pth"), step, model, optimizer, run_id)
+saved_checkpoints.append(os.path.join(args.output, f"model-{run_id}-{step}.pth"))
 print(f"step: {step}, training loss: {losses['train']}, validation loss: {losses['val']}")
 wandb.log({"training_loss": losses['train'], "validation_loss": losses['val']})
 
