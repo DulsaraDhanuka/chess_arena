@@ -15,28 +15,19 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument('-i', '--input', help='Input data .npy', default='data.npy')
 parser.add_argument('-o', '--output', help='Output directory', required=True)
-parser.add_argument('--block_size', help='Block (context) size', type=int, required=True)
+parser.add_argument('--block_size', help='Block (context) size', type=int)
 parser.add_argument('--batch_size', help='Batch size', type=int, required=True)
-parser.add_argument('--embedding_size', help='Embedding dimensions', type=int, required=True)
-parser.add_argument('--num_heads', help='Number of heads in the multi-head attention layer', type=int, required=True)
-parser.add_argument('--num_blocks', help='Number of transformer blocks', type=int, required=True)
+parser.add_argument('--embedding_size', help='Embedding dimensions', type=int, )
+parser.add_argument('--num_heads', help='Number of heads in the multi-head attention layer', type=int,) 
+parser.add_argument('--num_blocks', help='Number of transformer blocks', type=int,)
 parser.add_argument('--eval_iters', help='Evaluation iterations', type=int, required=True)
 parser.add_argument('--eval_interval', help='Evaluation interval', type=int, required=True)
-parser.add_argument('--learning_rate', help='Learning rate', type=float, required=True)
+parser.add_argument('--learning_rate', help='Learning rate', type=float, )
 parser.add_argument('--max_iters', help='Max Iterations', type=int, required=True)
-parser.add_argument('--dropout', help='Dropout rate', type=float, required=True)
+parser.add_argument('--dropout', help='Dropout rate', type=float, )
+parser.add_argument('--checkpoint', help='Saved checkpoint of a previous model iteration', type=str, default=None)
 args = parser.parse_args()
 
-block_size = args.block_size
-batch_size = args.batch_size
-n_embd = args.embedding_size
-n_heads = args.num_heads
-n_blocks = args.num_blocks
-eval_iters = args.eval_iters
-learning_rate = args.learning_rate
-max_iters = args.max_iters
-eval_interval = args.eval_interval
-dropout = args.dropout
 try:
     import torch_xla
     import torch_xla.core.xla_model as xm
@@ -47,8 +38,37 @@ except Exception as e:
 
 print(f"Running on {device}")
 
+learning_rate = args.learning_rate
+batch_size = args.batch_size
+eval_iters = args.eval_iters
+max_iters = args.max_iters
+eval_interval = args.eval_interval
+
+if "seed" in args: torch.manual_seed(args.seed)
+
+start_iter = 0
+if "checkpoint" in args and args.checkpoint is not None:
+    checkpoint = torch.load(wandb.restore(args.resume_checkpoint), map_location=torch.device(device))
+    model.load_state_dict(checkpoint["model_state_dict"])
+    optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+    start_iter = checkpoint["current_iter"]
+    run_id = checkpoint["model_id"]
+    block_size = checkpoint["block_size"]
+    n_embd = checkpoint["embedding_size"]
+    n_heads = checkpoint["num_heads"]
+    n_blocks = checkpoint["num_blocks"]
+    dropout = checkpoint["dropout"]
+else:
+    run_id = wandb.util.generate_id()
+    block_size = args.block_size
+    n_embd = args.embedding_size
+    n_heads = args.num_heads
+    n_blocks = args.num_blocks
+    dropout = args.dropout
+
 wandb.init(
     project="chess_transformer",
+    id=run_id,
     config={
         "block_size": block_size,
         "batch_size": batch_size,
@@ -60,7 +80,8 @@ wandb.init(
         "max_iters": max_iters,
         "eval_interval": eval_interval,
         "dropout": dropout,
-    }
+    },
+    resume='allow'
 )
 
 with open(args.input, 'rb') as f:
@@ -94,6 +115,20 @@ def estimate_loss():
     model.train()
     return out
 
+def save_checkpoint(save_path, step, model, optimizer, run_id):
+    torch.save({
+        "current_iter": step,
+        "model_state_dict": model.state_dict(),
+        "optimizer_state_dict": optimizer.state_dict(),
+        "model_id": run_id,
+        "block_size": block_size,
+        "embedding_size": n_embd,
+        "num_heads": n_heads,
+        "num_blocks": n_blocks,
+        "dropout": dropout
+    }, save_path)
+    wandb.save(os.path.join(args.output, f"model-{run_id}-{step}.pth"))
+
 model = Transformer(block_size, Encoding().n_vocab, n_embd, n_heads, n_blocks, dropout, device)
 model.train()
 model.to(device)
@@ -101,14 +136,13 @@ optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
 training_epoch_loss = []
 validation_epoch_loss = []
-model_id = time.time()
-for step in range(max_iters):
+for step in range(start_iter, max_iters):
     try:
         if step % eval_interval == 0:
             losses = estimate_loss()
             training_epoch_loss.append(losses['train'])
             validation_epoch_loss.append(losses['val'])
-            torch.save(model.state_dict(), os.path.join(args.output, f"model-{model_id}-{step}.pth"))
+            save_checkpoint(os.path.join(args.output, f"model-{run_id}-{step}.pth"), step, model, optimizer, run_id)
             print(f"step: {step}, training loss: {losses['train']}, validation loss: {losses['val']}")
             wandb.log({"training_loss": losses['train'], "validation_loss": losses['val']})
         logits, loss = model(*get_batch("train"))
@@ -121,8 +155,8 @@ for step in range(max_iters):
 losses = estimate_loss()
 training_epoch_loss.append(losses['train'])
 validation_epoch_loss.append(losses['val'])
-torch.save(model.state_dict(), os.path.join(args.output, f"model-{model_id}-{step}.pth"))
-print(f"step: {step}, training loss: {losses['train']}, validation loss: {losses['val']}, lr: {optimizer.param_groups[0]['lr']}")
+save_checkpoint(os.path.join(args.output, f"model-{run_id}-{step}.pth"))
+print(f"step: {step}, training loss: {losses['train']}, validation loss: {losses['val']}")
 wandb.log({"training_loss": losses['train'], "validation_loss": losses['val']})
 
 wandb.finish()
