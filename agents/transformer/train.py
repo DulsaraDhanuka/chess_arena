@@ -10,7 +10,7 @@ from data_utils import Encoding
 import numpy as np
 
 parser = argparse.ArgumentParser(
-                    prog='Infinite Shakespeare Trainer',
+                    prog='Chess Transformer Trainer',
                     description='Train the transformer on a dataset')
 
 parser.add_argument('-i', '--input', help='Input data .npy', default='data.npy')
@@ -38,7 +38,6 @@ except Exception as e:
 
 print(f"Running on {device}")
 
-learning_rate = args.learning_rate
 batch_size = args.batch_size
 eval_iters = args.eval_iters
 max_iters = args.max_iters
@@ -48,9 +47,7 @@ if "seed" in args: torch.manual_seed(args.seed)
 
 start_iter = 0
 if "checkpoint" in args and args.checkpoint is not None:
-    checkpoint = torch.load(wandb.restore(args.resume_checkpoint), map_location=torch.device(device))
-    model.load_state_dict(checkpoint["model_state_dict"])
-    optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+    checkpoint = torch.load(args.checkpoint)
     start_iter = checkpoint["current_iter"]
     run_id = checkpoint["model_id"]
     block_size = checkpoint["block_size"]
@@ -58,6 +55,7 @@ if "checkpoint" in args and args.checkpoint is not None:
     n_heads = checkpoint["num_heads"]
     n_blocks = checkpoint["num_blocks"]
     dropout = checkpoint["dropout"]
+    learning_rate = checkpoint["learning_rate"] 
 else:
     run_id = wandb.util.generate_id()
     block_size = args.block_size
@@ -65,6 +63,7 @@ else:
     n_heads = args.num_heads
     n_blocks = args.num_blocks
     dropout = args.dropout
+    learning_rate = args.learning_rate
 
 wandb.init(
     project="chess_transformer",
@@ -84,12 +83,16 @@ wandb.init(
     resume='allow'
 )
 
+
+if "checkpoint" in args and args.checkpoint is not None:
+    wandb.restore(args.checkpoint)
+
 with open(args.input, 'rb') as f:
     tokens = np.load(f)
 
 data = torch.from_numpy(tokens)
 data = data.type(torch.LongTensor)
-n = int(0.8*data.shape[0])
+n = int(0.9*data.shape[0])
 train_data = data[:n]
 val_data = data[n:]
 
@@ -125,7 +128,8 @@ def save_checkpoint(save_path, step, model, optimizer, run_id):
         "embedding_size": n_embd,
         "num_heads": n_heads,
         "num_blocks": n_blocks,
-        "dropout": dropout
+        "dropout": dropout,
+        "learning_rate": learning_rate,
     }, save_path)
     wandb.save(os.path.join(args.output, f"model-{run_id}-{step}.pth"))
 
@@ -133,6 +137,10 @@ model = Transformer(block_size, Encoding().n_vocab, n_embd, n_heads, n_blocks, d
 model.train()
 model.to(device)
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+
+if "checkpoint" in args and args.checkpoint is not None:
+    model.load_state_dict(checkpoint["model_state_dict"])
+    optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
 
 training_epoch_loss = []
 validation_epoch_loss = []
@@ -155,7 +163,7 @@ for step in range(start_iter, max_iters):
 losses = estimate_loss()
 training_epoch_loss.append(losses['train'])
 validation_epoch_loss.append(losses['val'])
-save_checkpoint(os.path.join(args.output, f"model-{run_id}-{step}.pth"))
+save_checkpoint(os.path.join(args.output, f"model-{run_id}-{step}.pth"), step, model, optimizer, run_id)
 print(f"step: {step}, training loss: {losses['train']}, validation loss: {losses['val']}")
 wandb.log({"training_loss": losses['train'], "validation_loss": losses['val']})
 
