@@ -132,7 +132,7 @@ def save_checkpoint(save_path, step, model, optimizer, run_id):
         "dropout": dropout,
         "learning_rate": learning_rate,
     }, save_path)
-    wandb.save(os.path.join(args.output, f"model-{run_id}-{step}.pth"))
+    #wandb.save(os.path.join(args.output, f"model-{run_id}-{step}.pth"))
 
 def clear_past(keep_saves, saved_checkpoints):
     if keep_saves is None: return
