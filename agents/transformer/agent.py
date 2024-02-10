@@ -8,17 +8,20 @@ class TransformerAgent():
         self.name = name
         self.enc = Encoding()
 
+        checkpoint = torch.load("agents/transformer/models/glorious-galaxy-62/model-trnwcgr7-48600.pth", map_location=torch.device('cpu'))
+
         n_vocab = self.enc.n_vocab
-        block_size = 512
-        n_embd = 384
-        n_heads = 6
-        n_blocks = 6
-        dropout = 0.2
+        block_size = checkpoint["block_size"]
+        n_embd = checkpoint["embedding_size"]
+        n_heads = checkpoint["num_heads"]
+        n_blocks = checkpoint["num_blocks"]
+        dropout = checkpoint["dropout"]
+
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
         self.model = Transformer(block_size, n_vocab, n_embd, n_heads, n_blocks, dropout, self.device)
         self.model.to(self.device)
-        self.model.load_state_dict(torch.load("agents/transformer/models/4/model-1706148505.1289093-21900.pth", map_location=torch.device('cpu')))
+        self.model.load_state_dict(checkpoint["model_state_dict"])
         self.model.eval()
 
     def next_move(self, board: chess.Board, last_move: str, next_legal_moves: chess.LegalMoveGenerator):
@@ -36,8 +39,8 @@ class TransformerAgent():
                 print(f"Invalid move: {move}")
         return None
 
-    def reset(self):
-        self.context = [self.enc.encode('<s>')]
+    def reset(self, self_color):
+        self.context = [self.enc.encode(f'<s:{"WHITE" if self_color == chess.WHITE else "BLACK" }>')]
 
     def terminate(self):
         pass

@@ -90,7 +90,7 @@ class MinimaxAgent():
         #move, score = self.minimax(graph)
         move, score = self.alpha_beta_max(board, float('-inf'), float('+inf'), depth)
         return move
-    def reset(self):
+    def reset(self, self_color):
         pass
     def terminate(self):
         pass

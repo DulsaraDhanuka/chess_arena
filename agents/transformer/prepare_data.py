@@ -33,6 +33,7 @@ for pgn_name in pgn_files:
                     tokens.append(enc.encode(move.uci()))
                 tokens.append(enc.encode("</s>"))
             except Exception as e:
+                print(e)
                 continue
 n_vocab = enc.n_vocab
 print()

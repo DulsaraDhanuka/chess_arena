@@ -9,7 +9,7 @@ class RandomAgent():
         legal_moves = [move.uci() for move in next_legal_moves]
         return random.choice(legal_moves)
 
-    def reset(self):
+    def reset(self, self_color):
         pass
 
     def terminate(self):

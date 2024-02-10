@@ -11,3 +11,4 @@ class Encoding():
         self.n_vocab = n_vocab
     def encode(self, move: str): return vocab[move]
     def decode(self, move: int): return vocab[move]
+

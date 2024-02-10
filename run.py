@@ -40,14 +40,14 @@ players = [agent1, agent2]
 wins = {}
 total_matches = 0
 n_moves_matches = []
-for _ in range(1):
+for _ in range(100):
     board = chess.Board()
     n_moves = 0
-    for player in players:
-        player.reset()
     current_player = random.choice(players)
     white_player = current_player
     black_player = players[int(not players.index(current_player))]
+    for player in players:
+        player.reset(white_player == player)
     last_move = None
     print(f"White: {white_player.name}, Black: {black_player.name}")
     while not board.is_game_over():

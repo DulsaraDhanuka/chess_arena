@@ -29,7 +29,13 @@ for i in range(8):
             insert_vocab(itof[i] + '7' + itof[i+1] + '8' + piece)
         insert_vocab(itof[i] + '7' + itof[i] + '8' + piece)
 
-print(vocab)
+for i in range(8):
+    for piece in ['b', 'n', 'q', 'r']:
+        if i != 0:
+            insert_vocab(itof[i] + '2' + itof[i-1] + '1' + piece)
+        if i != 7:
+            insert_vocab(itof[i] + '2' + itof[i+1] + '1' + piece)
+        insert_vocab(itof[i] + '2' + itof[i] + '1' + piece)
 
 import pickle
 with open("vocab.pickle", "wb") as f:
